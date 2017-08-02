@@ -26,7 +26,7 @@ require '../inc_0700/config_inc.php'; #provides configuration, pathing, error ha
 if(isset($_GET['id']) && (int)$_GET['id'] > 0){#proper data must be on querystring
 	 $myID = (int)$_GET['id']; #Convert to integer, will equate to zero if fails
 }else{
-	myRedirect(VIRTUAL_PATH . "surveys/index.php");
+	myRedirect(VIRTUAL_PATH . "p3/index.php");
 }
 
 $mySurvey = new Survey($myID);
@@ -34,7 +34,7 @@ $mySurvey = new Survey($myID);
 
 if($mySurvey->IsValid)
 {#only load data if record found
-	$config->titleTag = $mySurvey->Title . " surveys made with php and love!"; #overwrite PageTitle with info!
+	$config->titleTag = $mySurvey->CategoryName . " surveys made with php and love!"; #overwrite PageTitle with info!
 	#Fills <meta> tags.  Currently we're adding to the existing meta tags in config_inc.php
 }
 
@@ -46,10 +46,10 @@ get_header(); #defaults to theme header or header_inc.php
 if($mySurvey->IsValid)
 {#records exist - show survey!
 	echo '
-	<h3 align="center">' . $mySurvey->Title . '</h3>
+	<h3 align="center">' . $mySurvey->CategoryName . '</h3>
 	<p>' . $mySurvey->Description . '</p>
 	';
-	echo $mySurvey->showQuestions();
+	echo $mySurvey->showArticle();
 }else{//no such survey!
     echo '<div align="center">What! No such survey? There must be a mistake!!</div>';
     
@@ -61,16 +61,16 @@ get_footer(); #defaults to theme footer or footer_inc.php
 
 class Survey
 {
-    public $SuveyID = 0;
-	public $Title = '';
+    public $CategoryID = 0;
+	public $Name = '';
   	public $Description = '';
 	public $IsValid = false;
-	public $Questions = array();
+	public $SubCategories = array();
     
     public function __construct($id)
     {
         $id = (int)$id; //cast to integer disallows SQL injection
-        $sql = "select Title,Description from sm17_SubCategory where CategoryID = " . $id;
+        $sql = "select CategoryName,Description from sm17_NewsCategory where CategoryID = " . $id;
         
    
 		# connection comes first in mysqli (improved) function
@@ -81,7 +81,7 @@ class Survey
 			$this->IsValid = true;//record found!
 			while ($row = mysqli_fetch_assoc($result))
 			{
-				$this->Title = dbOut($row['Title']);
+				$this->CategoryName = dbOut($row['CategoryName']);
 				$this->Description = dbOut($row['Description']);
 			}
 		}
@@ -113,18 +113,38 @@ class Survey
 		
 	}//end Survey __construct
 	
-	public function showQuestions()
+	public function showArticle()
 	{
+		$id = (int)$id;
+		$sql = "select Title,Description from sm17_SubCategory where CategoryID = " . $id;
+		$result = mysqli_query(IDB::conn(),$sql) or die(trigger_error(mysqli_error(IDB::conn()), E_USER_ERROR));
+
 		$myReturn = '';
 		
-		foreach($this->Articles as $article)
-		{
-			echo'
-			<p>$article->Title' .  Description:  . '$question->Description</p>
-			
-			
-			';
+		echo'
+			<table class="table table-striped table-hover ">
+  				<thead>
+					<tr>
+							<th>Title</th>
+							<th>Description</th>
+					</tr>
+				</thead>
+				<tbody>
+		';
+		while($row = mysqli_fetch_assoc($result))
+		{# process each row
+		echo'
+			<tr>
+
+				<td><a href="' . VIRTUAL_PATH . 'p3/view.php?id=' . (int)$row['SubCategoryID'] . '">' . dbOut($row['Title']) . '</a></td>
+				<td>' . $article->Description . '</td>
+			</tr>
+		';
 		}
+		echo'
+				</tbody>
+			</table>
+			';
 		
 		return $myReturn;
 		
@@ -145,4 +165,4 @@ class Article
 		
 	}//end of constructor
 	
-}//end Question class
+}//end Article class
