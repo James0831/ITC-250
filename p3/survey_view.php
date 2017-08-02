@@ -115,10 +115,43 @@ class Survey
 	
 	public function showArticle()
 	{
-		$id = (int)$id;
-		$sql = "select Title,Description from sm17_SubCategory where CategoryID = " . $id;
+
+		#reference images for pager
+		$prev = '<img src="' . VIRTUAL_PATH . 'images/arrow_prev.gif" border="0" />';
+		$next = '<img src="' . VIRTUAL_PATH . 'images/arrow_next.gif" border="0" />';
+
+		# Create instance of new 'pager' class
+		$myPager = new Pager(10,'',$prev,$next,'');
+		$sql = $myPager->loadSQL($sql);  #load SQL, add offset
+
+		# connection comes first in mysqli (improved) function
 		$result = mysqli_query(IDB::conn(),$sql) or die(trigger_error(mysqli_error(IDB::conn()), E_USER_ERROR));
 
+		if(mysqli_num_rows($result) > 0)
+		{#records exist - process
+			if($myPager->showTotal()==1){$itemz = "survey";}else{$itemz = "surveys";}  //deal with plural
+			echo '<div align="center">We have ' . $myPager->showTotal() . ' ' . $itemz . '!</div>';
+				echo'
+					<table class="table table-striped table-hover ">
+						<thead>
+							<tr>
+								<th>Title</th>
+								<th>Description</th>
+							</tr>
+						</thead>
+					<tbody>
+			';
+	while($row = mysqli_fetch_assoc($result))
+	{# process each row
+		echo '
+				<tr>
+					<td><a href="' . VIRTUAL_PATH . 'p3/view.php?id=' . (int)$row['SubCategoryID'] . '">' . dbOut($row['Title']) . '</a></td>
+					<td>' . dbOut($row['Description']) . '</td>
+				</tr>
+		';
+		
+	}
+	/*
 		$myReturn = '';
 		
 		echo'
@@ -131,25 +164,27 @@ class Survey
 				</thead>
 				<tbody>
 		';
-		while($row = mysqli_fetch_assoc($result))
-		{# process each row
-		echo'
-			<tr>
-
-				<td><a href="' . VIRTUAL_PATH . 'p3/view.php?id=' . (int)$row['SubCategoryID'] . '">' . dbOut($row['Title']) . '</a></td>
-				<td>' . $article->Description . '</td>
-			</tr>
-		';
+		
+		foreach($this->Articles as $article)
+		{
+			echo'
+					<tr>
+					
+						<td>' . $article->Title .  '</td>
+						<td>' . $article->Description . '</td>
+					</tr>
+			';
 		}
 		echo'
 				</tbody>
 			</table>
 			';
-		
+		*/
 		return $myReturn;
 		
 	}//end of showQuestions
 }//end Survey class
+}
 
 class Article
 {
