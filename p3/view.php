@@ -22,7 +22,7 @@ if(isset($_GET['id']) && (int)$_GET['id'] > 0){#proper data must be on querystri
 	 $myID = (int)$_GET['id']; #Convert to integer, will equate to zero if fails
 
 } else {
-	myRedirect(VIRTUAL_PATH . "p3/index.php");
+	myRedirect(VIRTUAL_PATH . "p3/index-2.php");
 }
 
 //Creates SubCategory object
