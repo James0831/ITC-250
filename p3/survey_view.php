@@ -21,7 +21,10 @@
 
 # '../' works for a sub-folder.  use './' for the root  
 require '../inc_0700/config_inc.php'; #provides configuration, pathing, error handling, db credentials
- 
+
+//Provides namespace
+spl_autoload_register('MyAutoLoader::NamespaceLoader');
+
 # check variable of item passed in - if invalid data, forcibly redirect back to index.php page
 if(isset($_GET['id']) && (int)$_GET['id'] > 0){#proper data must be on querystring
 	 $myID = (int)$_GET['id']; #Convert to integer, will equate to zero if fails
@@ -29,13 +32,13 @@ if(isset($_GET['id']) && (int)$_GET['id'] > 0){#proper data must be on querystri
 	myRedirect(VIRTUAL_PATH . "p3/index.php");
 }
 
-$mySurvey = new Survey($myID);
-//dumpDie($mySurvey);  //found in inc_0700/common_inc.php 
-
-if($mySurvey->IsValid)
-{#only load data if record found
-	$config->titleTag = $mySurvey->CategoryName . " surveys made with php and love!"; #overwrite PageTitle with info!
-	#Fills <meta> tags.  Currently we're adding to the existing meta tags in config_inc.php
+//Creates Category object
+$myCategory = new MyClasses\Category($myID);
+//Creates custom title tag
+if($myCategory->isValid) {
+	$config->titleTag = $myCategory->Title . " SubCategories!"; //use category title property
+} else {
+	$config->titleTag = smartTitle(); //use constant 
 }
 
 # END CONFIG AREA ---------------------------------------------------------- 
@@ -43,161 +46,16 @@ if($mySurvey->IsValid)
 get_header(); #defaults to theme header or header_inc.php
 
 
-if($mySurvey->IsValid)
-{#records exist - show survey!
+#records exist - show survey!
 	echo '
-	<h3 align="center">' . $mySurvey->CategoryName . '</h3>
-	<p>' . $mySurvey->Description . '</p>
+	<h3 align="center">' . smartTitle() . '</h3>
 	';
-	echo $mySurvey->showArticle();
-}else{//no such survey!
-    echo '<div align="center">What! No such survey? There must be a mistake!!</div>';
-    
-}
-
-echo '<div align="center"><a href="' . VIRTUAL_PATH . 'p3/index.php">Back</a></div>';
+	if($myCategory->isValid) {
+	$myCategory->showSubCategories();
+	} else { // else inform user no subcategories exist for this category
+	echo "<div align=center>There are currently no SubCategories for" . $this->Title . "</div>";	
+	} 
+	
+	VIRTUAL_PATH . 'p3/index.php">Back</a></div>';
 
 get_footer(); #defaults to theme footer or footer_inc.php
-
-class Survey
-{
-    public $CategoryID = 0;
-	public $Name = '';
-  	public $Description = '';
-	public $IsValid = false;
-	public $SubCategories = array();
-    
-    public function __construct($id)
-    {
-        $id = (int)$id; //cast to integer disallows SQL injection
-        $sql = "select CategoryName,Description from sm17_NewsCategory where CategoryID = " . $id;
-        
-   
-		# connection comes first in mysqli (improved) function
-		$result = mysqli_query(IDB::conn(),$sql) or die(trigger_error(mysqli_error(IDB::conn()), E_USER_ERROR));
-
-		if(mysqli_num_rows($result) > 0)
-		{#records exist - process
-			$this->IsValid = true;//record found!
-			while ($row = mysqli_fetch_assoc($result))
-			{
-				$this->CategoryName = dbOut($row['CategoryName']);
-				$this->Description = dbOut($row['Description']);
-			}
-		}
-
-		@mysqli_free_result($result); # We're done with the data!
-
-		
-		
-		//----start question class data here
-		$sql = "select Title,Description from sm17_SubCategory where CategoryID = " . $id;
-  
-		# connection comes first in mysqli (improved) function
-		$result = mysqli_query(IDB::conn(),$sql) or die(trigger_error(mysqli_error(IDB::conn()), E_USER_ERROR));
-
-		if(mysqli_num_rows($result) > 0)
-		{#records exist - process
-			$this->IsValid = true;//record found!
-			while ($row = mysqli_fetch_assoc($result))
-			{
-				//$this->Title = dbOut($row['Title']);
-				//$this->Description = dbOut($row['Description']);
-				$this->Articles[] = new Article(dbOut($row['Title']),dbOut($row['Description']));
-			}
-		}
-
-		@mysqli_free_result($result); # We're done with the data!
-		//-----end question class data here
-			
-		
-	}//end Survey __construct
-	
-	public function showArticle()
-	{
-
-		#reference images for pager
-		$prev = '<img src="' . VIRTUAL_PATH . 'images/arrow_prev.gif" border="0" />';
-		$next = '<img src="' . VIRTUAL_PATH . 'images/arrow_next.gif" border="0" />';
-
-		# Create instance of new 'pager' class
-		$myPager = new Pager(10,'',$prev,$next,'');
-		$sql = $myPager->loadSQL($sql);  #load SQL, add offset
-
-		# connection comes first in mysqli (improved) function
-		$result = mysqli_query(IDB::conn(),$sql) or die(trigger_error(mysqli_error(IDB::conn()), E_USER_ERROR));
-
-		if(mysqli_num_rows($result) > 0)
-		{#records exist - process
-			if($myPager->showTotal()==1){$itemz = "survey";}else{$itemz = "surveys";}  //deal with plural
-			echo '<div align="center">We have ' . $myPager->showTotal() . ' ' . $itemz . '!</div>';
-				echo'
-					<table class="table table-striped table-hover ">
-						<thead>
-							<tr>
-								<th>Title</th>
-								<th>Description</th>
-							</tr>
-						</thead>
-					<tbody>
-			';
-	while($row = mysqli_fetch_assoc($result))
-	{# process each row
-		echo '
-				<tr>
-					<td><a href="' . VIRTUAL_PATH . 'p3/view.php?id=' . (int)$row['SubCategoryID'] . '">' . dbOut($row['Title']) . '</a></td>
-					<td>' . dbOut($row['Description']) . '</td>
-				</tr>
-		';
-		
-	}
-	/*
-		$myReturn = '';
-		
-		echo'
-			<table class="table table-striped table-hover ">
-  				<thead>
-					<tr>
-							<th>Title</th>
-							<th>Description</th>
-					</tr>
-				</thead>
-				<tbody>
-		';
-		
-		foreach($this->Articles as $article)
-		{
-			echo'
-					<tr>
-					
-						<td>' . $article->Title .  '</td>
-						<td>' . $article->Description . '</td>
-					</tr>
-			';
-		}
-		echo'
-				</tbody>
-			</table>
-			';
-		*/
-		return $myReturn;
-		
-	}//end of showQuestions
-}//end Survey class
-}
-
-class Article
-{
-	public $Title = '';
-	public $Description = '';
-	
-	public function __construct($Title, $Description)
-	{
-		$this->Title = $Title;
-		$this->Description = $Description;
-		
-		
-		
-	}//end of constructor
-	
-}//end Article class

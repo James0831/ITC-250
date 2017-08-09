@@ -30,11 +30,10 @@ $sql =
 select c.CategoryName, c.Description, c.CategoryID from " . PREFIX . "NewsCategory c";
 
 #Fills <title> tag. If left empty will default to $PageTitle in config_inc.php  
-$config->titleTag = 'Surveys made with PHP in Seattle';
+$config->titleTag = 'News for you!';
 
 #Fills <meta> tags.  Currently we're adding to the existing meta tags in config_inc.php
 $config->metaDescription = 'Seattle Central\'s ITC250 Class! ' . $config->metaDescription;
-$config->metaKeywords = 'Muffins,PHP,Fun,Bran,Regular,Regular Expressions,'. $config->metaKeywords;
 
 /*
 $config->metaDescription = 'Web Database ITC281 class website.'; #Fills <meta> tags.
@@ -106,6 +105,7 @@ if(mysqli_num_rows($result) > 0)
 }else{#no records
     echo "<div align=center>There are currently no surveys. </div>";	
 }
+//clear results
 @mysqli_free_result($result);
 
 get_footer(); #defaults to theme footer or footer_inc.php
